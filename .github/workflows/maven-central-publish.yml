@@ -57,7 +57,9 @@ jobs:
           echo "pinentry-mode loopback" >> ~/.gnupg/gpg.conf
           echo "allow-loopback-pinentry" >> ~/.gnupg/gpg-agent.conf
           chmod 600 ~/.gnupg/gpg.conf ~/.gnupg/gpg-agent.conf
-          echo "${{ secrets.GPG_PRIVATE_KEY }}" | gpg --batch --import
+          # Save key to file and import
+          echo "${{ secrets.GPG_PRIVATE_KEY }}" | base64 --decode > private.key
+          gpg --batch --import private.key
           # List keys to verify import
           gpg --list-secret-keys --keyid-format LONG
           # Test signing
