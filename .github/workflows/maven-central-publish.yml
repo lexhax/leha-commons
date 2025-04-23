@@ -52,8 +52,11 @@ jobs:
       - name: Setup GPG
         run: |
           mkdir -p ~/.gnupg
+          # Fix permissions
+          chmod 700 ~/.gnupg
           echo "pinentry-mode loopback" >> ~/.gnupg/gpg.conf
           echo "allow-loopback-pinentry" >> ~/.gnupg/gpg-agent.conf
+          chmod 600 ~/.gnupg/gpg.conf ~/.gnupg/gpg-agent.conf
           echo "${{ secrets.GPG_PRIVATE_KEY }}" | gpg --batch --import
           # List keys to verify import
           gpg --list-secret-keys --keyid-format LONG
