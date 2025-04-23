@@ -51,21 +51,42 @@ jobs:
 
       - name: Setup GPG
         run: |
+          # Create gnupg directory with correct permissions
           mkdir -p ~/.gnupg
-          # Fix permissions
           chmod 700 ~/.gnupg
-          echo "pinentry-mode loopback" >> ~/.gnupg/gpg.conf
-          echo "allow-loopback-pinentry" >> ~/.gnupg/gpg-agent.conf
+          
+          # Configure GPG for non-interactive use
+          cat > ~/.gnupg/gpg.conf << EOF
+          use-agent
+          pinentry-mode loopback
+          batch
+          no-tty
+          EOF
+          
+          # Configure GPG agent
+          cat > ~/.gnupg/gpg-agent.conf << EOF
+          allow-loopback-pinentry
+          EOF
+          
+          # Set correct permissions
           chmod 600 ~/.gnupg/gpg.conf ~/.gnupg/gpg-agent.conf
-          # Save key to file and import (without base64 decoding)
-          echo "${{ secrets.GPG_PRIVATE_KEY }}" > private.key
+          
+          # Write key to file with proper line endings
+          # This preserves line breaks and formatting of the key
+          echo -e "${{ secrets.GPG_PRIVATE_KEY }}" > private.key
           gpg --batch --import private.key
-          rm private.key  # Clean up
-          # List keys to verify import
+          rm private.key
+          
+          # Display imported key for verification
           gpg --list-secret-keys --keyid-format LONG
+          
+          # Get key ID for signing
+          KEY_ID=$(gpg --list-secret-keys --keyid-format LONG | grep sec | awk '{print $2}' | cut -d'/' -f2)
+          echo "Using GPG key: $KEY_ID"
+          
           # Test signing
           echo "test" > test.txt
-          gpg --batch --yes --passphrase "${{ secrets.GPG_PASSPHRASE }}" --pinentry-mode loopback --sign test.txt
+          gpg --batch --yes --passphrase "${{ secrets.GPG_PASSPHRASE }}" --pinentry-mode loopback -u $KEY_ID --sign test.txt
           gpg --verify test.txt.gpg
 
       - name: Build and deploy
